@@ -730,7 +730,7 @@ End NormedModule1_numFieldType.
 Section hausdorff.
 
 (* TODO: should move to reals.v *)
-Lemma Rhausdorff : hausdorff [topologicalType of Rdefinitions.R].
+Lemma Rhausdorff (R : realType) : hausdorff [topologicalType of R^o].
 Proof.
 move=> x y clxy; apply/eqP; rewrite eq_le.
 apply/(@in_segment_addgt0Pr _ x _ x) => _ /posnumP[e].
@@ -741,12 +741,12 @@ rewrite (subr_trans z) (le_trans (ler_norm_add _ _) _)// ltW //.
 by rewrite (splitr e%:num) (distrC z); apply: ltr_add.
 Qed.
 
-Lemma normedModType_hausdorff (V : normedModType Rdefinitions.R) : hausdorff V.
+Lemma normedModType_hausdorff (R : realType) (V : normedModType R) : hausdorff V.
 Proof.
 move=> p q clp_q; apply/subr0_eq/normr0_eq0/Rhausdorff => A B pq_A.
 rewrite -(@normr0 _ V) -(subrr p) => pp_B.
 suff loc_preim r C :
-  locally `|p - r| C -> locally r ((fun r => `|p - r|) @^-1` C).
+  @locally _ [filteredType R of R^o] `|p - r| C -> locally r ((fun r => `|p - r|) @^-1` C).
   have [r []] := clp_q _ _ (loc_preim _ _ pp_B) (loc_preim _ _ pq_A).
   by exists `|p - r|.
 move=> [e egt0 pre_C]; apply: locally_le_locally_norm; exists e => // s re_s.
