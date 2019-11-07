@@ -1436,7 +1436,7 @@ Proof.  by []. Qed.
 
 Lemma mx_norm'_eq0 (x : 'M_(m, n)) : mx_norm' x = (nonneg_0 K) -> x = 0.
 Proof.
-rewrite !mx_normE'.
+rewrite /mx_norm.
 move=> H.
 have /eqP := H; rewrite eq_le => /andP [/Bigmaxr_nonneg.bigmaxr_lerP [_ x0] _].
 apply/matrixP => i j; rewrite mxE; apply/eqP.
@@ -1451,7 +1451,7 @@ Qed.
 
 Lemma mx_norm'0 : mx_norm' (0 : 'M_(m, n)) = nonneg_0 K.
 Proof.
-rewrite !mx_normE' (eq_bigr (fun=> nonneg_0 K)) /=; last first.
+rewrite /mx_norm' (eq_bigr (fun=> nonneg_0 K)) /=; last first.
   by move=> i _; apply val_inj => /=; rewrite mxE normr0.
 by elim/big_ind : _ => // a b ->{a} ->{b}; rewrite joinxx.
 Qed.
@@ -1466,7 +1466,7 @@ Admitted.
 
 Lemma mx_norm'_neq0 x : mx_norm' x != @nonneg_0 K -> exists i, (mx_norm' x)%:nnnum = `|x i.1 i.2|.
 Proof.
-rewrite !mx_normE'.
+rewrite /mx_norm'.
 elim/big_ind : _ => [|a b Ha Hb H|/= i _ _]; [by rewrite eqxx| | by exists i].
 case: (leP a b) => ab.
 + suff /Hb[i xi] : b != nonneg_0 K by exists i.
@@ -1478,10 +1478,10 @@ Qed.
 Lemma mx_norm'_natmul (x : 'M_(m, n)) n0 :
   (mx_norm' (x *+ n0))%:nnnum = (mx_norm' x)%:nnnum *+ n0.
 Proof.
-rewrite [in RHS]mx_normE'.
+rewrite [in RHS]/mx_norm'.
 elim: n0 => [|n0 ih]; first by rewrite !mulr0n mx_norm'0.
 rewrite !mulrS; apply/eqP; rewrite eq_le; apply/andP; split.
-  by rewrite -ih -mx_normE'; exact/ler_mx_norm'_add.
+  by rewrite -ih -/mx_norm'; exact/ler_mx_norm'_add.
 have [/eqP/mx_norm'_eq0->|x0] := boolP (mx_norm' x == (nonneg_0 K)).
   by rewrite -mx_normE' !(mul0rn,addr0,mx_norm'0).
 rewrite mx_normE'.
@@ -1515,7 +1515,6 @@ Section mx_norm.
 
 Variables (K : realDomainType) (m n : nat).
 
-
 Lemma mx_normE (x : 'M[K]_(m, n)) :
   mx_norm x = \big[maxr/0]_ij `|x ij.1 ij.2|.
 Proof. by rewrite /mx_norm -bigmaxr_nonneg. Qed.
@@ -1541,33 +1540,35 @@ End mx_norm.
 
 
 Section matrix_NormedModule'.
+(*WIP : generalize to numFieldType**)
 
 Variables (K :  numFieldType) (m n : nat).
 
-Definition matrix_normedZmodMixin :=
+Definition matrix_normedZmodMixin' :=
   @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1) 
     (@mx_norm_eq0 _ _ _) (@mx_norm_natmul _ _ _) (@mx_normN _ _ _).
 
-Canonical matrix_normedZmodType :=
-  NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin.
+Canonical matrix_normedZmodType' :=
+  NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin'.
 
-Lemma mx_norm_ball :
-  @ball _ [uniformType K of 'M[K^o]_(m.+1, n.+1)] = ball_ (fun x => `| x |).
-Proof.
-rewrite /= /normr /=.
-rewrite predeq3E => x e y; split.
-  move=> xe_y; rewrite /ball_ mx_normE; apply/bigmaxr_ltrP.
-  split; [exact/(le_lt_trans _ (xe_y ord0 ord0)) |
-          move=> ??; rewrite !mxE; exact: xe_y].
-rewrite /ball_; rewrite mx_normE => /bigmaxr_ltrP => -[e0 xey] i j.
-move: (xey (i, j)); rewrite !mxE; exact.
-Qed.
+(* Lemma mx_norm_ball : *)
+(*   @ball _ [uniformType K of 'M[K^o]_(m.+1, n.+1)] = ball_ (fun x => `| x |). *)
+(* Proof. *)
+(* rewrite /= /normr /=. *)
+(* rewrite predeq3E => x e y; split. *)
+(* move=> xe_y; rewrite /ball_ /mx_norm /mx_norm'. (*TODO:make e a positive number*) *)
+(* (* Check Bigmaxr_nonneg.bigmaxr_ltrP. *) *)
+(* (*   split; [exact/(le_lt_trans _ (xe_y ord0 ord0)) | *) *)
+(* (*           move=> ??; rewrite !mxE; exact: xe_y]. *) *)
+(* (* rewrite /ball_; rewrite mx_normE => /bigmaxr_ltrP => -[e0 xey] i j. *) *)
+(* (* move: (xey (i, j)); rewrite !mxE; exact. *) *)
+(* (* Qed. *) *)
+(* Admitted. *)
 
-Definition matrix_UniformNormedZmodMixin :=
-  UniformNormedZmodule.Mixin mx_norm_ball.
-Canonical matrix_uniformNormedZmodType :=
-  UniformNormedZmoduleType K 'M[K^o]_(m.+1, n.+1) matrix_UniformNormedZmodMixin.
-
+(* Definition matrix_UniformNormedZmodMixin := *)
+(*   UniformNormedZmodule.Mixin mx_norm_ball. *)
+(* Canonical matrix_uniformNormedZmodType := *)
+(*   UniformNormedZmoduleType K 'M[K^o]_(m.+1, n.+1) matrix_UniformNormedZmodMixin. *)
   
   
 End matrix_NormedModule'. 
@@ -1576,11 +1577,11 @@ End matrix_NormedModule'.
 
 Section matrix_NormedModule.
 
-Variables (K : realFieldType (* TODO: generalize to numFieldType*)) (m n : nat).
+Variables (K : realFieldType ) (m n : nat).
 
 Definition matrix_normedZmodMixin :=
   @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1)
-    (@mx_norm'_eq0 _ _ _) (@mx_norm'_natmul _ _ _) (@mx_normN _ _ _).
+    (@mx_norm_eq0 _ _ _) (@mx_norm_natmul _ _ _) (@mx_normN _ _ _).
 
 Canonical matrix_normedZmodType :=
   NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin.
