@@ -1472,10 +1472,10 @@ Qed.
 
 Lemma mx_norm0 : mx_norm (0 : 'M_(m, n)) = 0.
 Proof.
-apply/eqP; rewrite -nonneg_eq0;  last by apply :(nonneg_0 K). 
-apply/eqP.  (* exact: mx_norm'.    *) (* BAH ? *)
-(* Qed. *)
-Admitted.
+apply/eqP; rewrite -nonneg_eq0; last by apply :(nonneg_0 K). 
+by apply/eqP; apply: mx_norm'0.
+Qed.
+
 
 
 Lemma mx_norm'_neq0 x : mx_norm' x != @nonneg_0 K -> exists i, (mx_norm' x)%:nnnum = `|x i.1 i.2|.
@@ -1511,7 +1511,7 @@ Proof.
 by rewrite /mx_norm; apply: mx_norm'_natmul.  
 Qed.
 
-(*TODO: clean, how to avoid nonneg_eq *)
+
 Lemma mx_norm'N (x : 'M_(m, n)) : mx_norm' (- x) = mx_norm' x.
 Proof.
 rewrite !mx_normE'; apply eq_bigr => /= ? _; rewrite mxE /nonneg_abs.
