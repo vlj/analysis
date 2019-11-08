@@ -948,6 +948,10 @@ Definition nonnegnum_porderMixin := [porderMixin of {nonneg R} by <:].
 Canonical nonnegnum_porderType :=
   POrderType ring_display {nonneg R} nonnegnum_porderMixin.
 
+
+Lemma nonnegE (x :R) (x_ge0 : 0 <= x) : (NonnegNum x_ge0)%:nnnum = x. 
+Proof. by []. Qed. 
+
 Lemma nonnegnum_le_total : totalPOrderMixin [porderType of {nonneg R}].
 Proof. by move=> x y; apply/real_comparable; apply/ger0_real/nonnegnum_ge0. Qed.
 
@@ -974,7 +978,6 @@ Proof. exact: nonnegnum_ge0. Qed.
 Lemma nonneg_eq ( x y : {nonneg R}) : (x == y) = (x%:nnnum == y%:nnnum).
 Proof. by []. Qed.
 
-
 Lemma nonneg_eq0 ( x y : {nonneg R}) : (x == nonneg_0) = (x%:nnnum == 0).
 Proof. by []. Qed.
 
@@ -982,7 +985,11 @@ Lemma nonneg_ler (x y : {nonneg R}): (x%:nnnum <= y%:nnnum) = (x <= y).
 Proof. by []. Qed.
 
 Lemma nonneg_ltr (x y : {nonneg R}): (x%:nnnum < y%:nnnum) = (x < y).
-Proof. by []. Qed. 
+Proof. by []. Qed.
+
+Definition nonneg_mul (x y : {nonneg R}) :=
+  NonnegNum (mulr_ge0 (nonnegnum_ge0 x) (nonnegnum_ge0 y)).
+
 
 End nonnegative_numbers.
 Notation "'{nonneg' R }" := (nonnegnum_of (@Phant R)).
@@ -1546,96 +1553,110 @@ Proof. exact: mx_norm'_natmul. Qed.*)
 End mx_norm.
 
 
-Section matrix_NormedModule'.
+Section matrix_NormedModule.
 (*WIP : generalize to numFieldType**)
 
 Variables (K :  numFieldType) (m n : nat).
 
-Definition matrix_normedZmodMixin' :=
-  @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1) 
-    (@mx_norm_eq0 _ _ _) (@mx_norm_natmul _ _ _) (@mx_normN _ _ _).
-
-Canonical matrix_normedZmodType' :=
-  NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin'.
-
-Lemma mx_norm_ball' :
-  @ball _ [uniformType K of 'M[K^o]_(m.+1, n.+1)] = ball_ (fun x => `| x |).
-Proof.
-rewrite /= /normr /=.
-rewrite predeq3E => x e y.
-have lee0: ( 0 < e). admit.
-have -> : e = (NonnegNum (ltW lee0))%:nnnum by [].
-split.
-move=> xe_y; rewrite /ball_ mx_normE.
-rewrite nonneg_ltr; apply/Bigmaxr_nonneg.bigmaxr_ltrP. 
-split; [rewrite -nonneg_ltr //= | move=> ??; rewrite !mxE; exact: xe_y ]. 
-rewrite /ball_; rewrite mx_normE => /Bigmaxr_nonneg.bigmaxr_ltrP => -[e0 xey] i j.
-move: (xey (i, j)); rewrite !mxE; exact.
-Admitted.
-
-Definition matrix_UniformNormedZmodMixin' :=
-  UniformNormedZmodule.Mixin mx_norm_ball'.
-Canonical matrix_uniformNormedZmodType' :=
-  UniformNormedZmoduleType K 'M[K^o]_(m.+1, n.+1) matrix_UniformNormedZmodMixin'.
-  
-Lemma mx_normZ (l : K) (x : 'M[K]_(m.+1, n.+1)) : `| l *: x | = `| l | * `| x |.
-Proof.
-rewrite {1 3}/normr /= !mx_normE. Check eq_bigr.   (Bigmaxr_nonneg.eq_bigr (fun i => `|l| * `|x i.1 i.2|)); last first.
-  by move=> *; rewrite mxE normrM.
-elim/big_ind2 : _ => //; first by rewrite mulr0.
-by move=> a b c d ->{b} ->{d}; rewrite maxr_pmulr.
-Qed.
-
-Definition matrix_NormedModMixin := NormedModMixin mx_normZ.
-Canonical matrix_normedModType :=
-  NormedModType K 'M[K^o]_(m.+1, n.+1) matrix_NormedModMixin.
-
-End matrix_NormedModule'. 
-  
-
-
-Section matrix_NormedModule.
-
-Variables (K : realFieldType ) (m n : nat).
+(* TODO: put somewhere else *)
+Lemma nonneg_scal (l : K ) ( x : {nonneg K}) :
+  `|l|* x%:nnnum = (nonneg_mul (nonneg_abs l) x)%:nnnum. 
+Proof. by []. Qed.   
 
 Definition matrix_normedZmodMixin :=
-  @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1)
+  @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1) 
     (@mx_norm_eq0 _ _ _) (@mx_norm_natmul _ _ _) (@mx_normN _ _ _).
 
 Canonical matrix_normedZmodType :=
   NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin.
 
-(* show the norm axiom and then use a factory to instantiate the type *)
 Lemma mx_norm_ball :
   @ball _ [uniformType K of 'M[K^o]_(m.+1, n.+1)] = ball_ (fun x => `| x |).
 Proof.
 rewrite /= /normr /=.
-rewrite predeq3E => x e y; split.
-  move=> xe_y; rewrite /ball_ mx_normrE; apply/bigmaxr_ltrP.
-  split; [exact/(le_lt_trans _ (xe_y ord0 ord0)) |
-          move=> ??; rewrite !mxE; exact: xe_y].
-rewrite /ball_; rewrite mx_normrE => /bigmaxr_ltrP => -[e0 xey] i j.
-move: (xey (i, j)); rewrite !mxE; exact.
+rewrite predeq3E => x e y.
+split. 
+- move=> xe_y; rewrite /ball_ mx_normE.
+  (* TODO:  lemma : ball x e y -> 0 < e *)
+  have lee0: ( 0 < e) by rewrite (le_lt_trans _ (xe_y ord0 ord0)) //. 
+  have -> : e = (NonnegNum (ltW lee0))%:nnnum by [].
+  rewrite nonneg_ltr; apply/Bigmaxr_nonneg.bigmaxr_ltrP. 
+- split; [rewrite -nonneg_ltr //= | move=> ??; rewrite !mxE; exact: xe_y ]. 
+  rewrite /ball_; rewrite mx_normE => H.
+  have lee0: ( 0 < e) by rewrite (le_lt_trans _ H) // nonnegnum_ge0.
+  move : H. 
+  have -> : e = (NonnegNum (ltW lee0))%:nnnum by [].
+  move => /Bigmaxr_nonneg.bigmaxr_ltrP => -[e0 xey] i j.
+  move: (xey (i, j)); rewrite !mxE; exact.
 Qed.
+
 
 Definition matrix_UniformNormedZmodMixin :=
   UniformNormedZmodule.Mixin mx_norm_ball.
-Canonical matrix_uniformNormedZmodType :=
+Canonical matrix_uniformNormedZmodType' :=
   UniformNormedZmoduleType K 'M[K^o]_(m.+1, n.+1) matrix_UniformNormedZmodMixin.
-
+  
 Lemma mx_normZ (l : K) (x : 'M[K]_(m.+1, n.+1)) : `| l *: x | = `| l | * `| x |.
-Proof.
-rewrite {1 3}/normr /= !mx_normrE (eq_bigr (fun i => `|l| * `|x i.1 i.2|)); last first.
-  by move=> *; rewrite mxE normrM.
+Proof. 
+rewrite {1 3}/normr /= !mx_normE
+ (eq_bigr (fun i => (nonneg_mul (nonneg_abs l) (nonneg_abs (x i.1 i.2)) ))) ; last first.
+move=> *; rewrite mxE //=; apply/eqP; rewrite nonneg_eq !nonnegE; apply/eqP.
+by apply: normrM. 
 elim/big_ind2 : _ => //; first by rewrite mulr0.
-by move=> a b c d ->{b} ->{d}; rewrite maxr_pmulr.
-Qed.
+move=> a b c d.
+rewrite !nonneg_scal => H1 H2. (*rewrite maxr_pmulr. *) admit.
+Admitted.
 
 Definition matrix_NormedModMixin := NormedModMixin mx_normZ.
 Canonical matrix_normedModType :=
   NormedModType K 'M[K^o]_(m.+1, n.+1) matrix_NormedModMixin.
 
-End matrix_NormedModule.
+End matrix_NormedModule. 
+  
+
+
+(* Section matrix_NormedModule. *)
+
+(* Variables (K : realFieldType ) (m n : nat). *)
+
+(* Definition matrix_normedZmodMixin := *)
+(*   @Num.NormedMixin _ _ _ (@mx_norm _ _ _) (@ler_mx_norm_add K m.+1 n.+1) *)
+(*     (@mx_norm_eq0 _ _ _) (@mx_norm_natmul _ _ _) (@mx_normN _ _ _). *)
+
+(* Canonical matrix_normedZmodType := *)
+(*   NormedZmoduleType K 'M[K]_(m.+1, n.+1) matrix_normedZmodMixin. *)
+
+(* (* show the norm axiom and then use a factory to instantiate the type *) *)
+(* Lemma mx_norm_ball : *)
+(*   @ball _ [uniformType K of 'M[K^o]_(m.+1, n.+1)] = ball_ (fun x => `| x |). *)
+(* Proof. *)
+(* rewrite /= /normr /=. *)
+(* rewrite predeq3E => x e y; split. *)
+(*   move=> xe_y; rewrite /ball_ mx_normrE; apply/bigmaxr_ltrP. *)
+(*   split; [exact/(le_lt_trans _ (xe_y ord0 ord0)) | *)
+(*           move=> ??; rewrite !mxE; exact: xe_y]. *)
+(* rewrite /ball_; rewrite mx_normrE => /bigmaxr_ltrP => -[e0 xey] i j. *)
+(* move: (xey (i, j)); rewrite !mxE; exact. *)
+(* Qed. *)
+
+(* Definition matrix_UniformNormedZmodMixin := *)
+(*   UniformNormedZmodule.Mixin mx_norm_ball. *)
+(* Canonical matrix_uniformNormedZmodType := *)
+(*   UniformNormedZmoduleType K 'M[K^o]_(m.+1, n.+1) matrix_UniformNormedZmodMixin. *)
+
+(* Lemma mx_normZ (l : K) (x : 'M[K]_(m.+1, n.+1)) : `| l *: x | = `| l | * `| x |. *)
+(* Proof. *)
+(* rewrite {1 3}/normr /= !mx_normrE (eq_bigr (fun i => `|l| * `|x i.1 i.2|)); last first. *)
+(*   by move=> *; rewrite mxE normrM. *)
+(* elim/big_ind2 : _ => //; first by rewrite mulr0. *)
+(* by move=> a b c d ->{b} ->{d}; rewrite maxr_pmulr. *)
+(* Qed. *)
+
+(* Definition matrix_NormedModMixin := NormedModMixin mx_normZ. *)
+(* Canonical matrix_normedModType := *)
+(*   NormedModType K 'M[K^o]_(m.+1, n.+1) matrix_NormedModMixin. *)
+
+(* End matrix_NormedModule. *)
 
 (** ** Pairs *)
 
