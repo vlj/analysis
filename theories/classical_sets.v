@@ -1,4 +1,4 @@
-From mathcomp Require Import all_ssreflect ssralg matrix finmap.
+From mathcomp Require Import all_ssreflect ssralg matrix finmap order.
 Require Import boolp.
 
 (******************************************************************************)
@@ -980,3 +980,87 @@ Definition supremum (x0 : T) E :=
   if pselect (E !=set0) then xget x0 (supremums E) else x0.
 
 End UpperLowerTheory.
+
+Module SetOrder.
+Section SetOrder.
+
+Context {T: Type}.
+Implicit Types (X Y : set T).
+
+Definition asboolsubset X Y := `[< X `<=`Y >].
+
+Definition proper_asboolsubset X Y := ~~(Y == X) && asboolsubset X Y.
+
+Lemma setI_meet X Y :
+  asboolsubset X Y = (setI X Y == X).
+Proof.
+apply/asbool_equiv_eqP.
+  apply/eqP.
+split.
+  move => XincY; apply/eqEsubset.
+    by apply: subIset ; left.
+  move => ? ? ; by split; [|apply: XincY].
+by move => <- ; apply: subIset ; right.
+Qed. 
+
+Fact proper_asboolsubset_proper x y :
+  proper_asboolsubset x y = ~~ (y == x) && asboolsubset x y.
+Proof. by []. Qed.
+
+Fact SetOrder_setCI : @commutative (set T) (set T) setI.
+Proof. apply: setIC. Qed.
+
+Fact SetOrder_setCU : @commutative (set T) (set T) setU.
+Proof. apply: setUC. Qed.
+
+Fact SetOrder_setIA : @associative (set T)  setI.
+Proof. apply: setIA. Qed.
+
+Fact SetOrder_setUA : @associative (set T)  setU.
+Proof. apply: setUA. Qed.
+
+Fact joinP (y x : arrow_choiceType T Prop_choiceType) :
+  x `&` (x `|` y) = x.
+Proof.
+apply/eqEsubset => ?.
+  by rewrite /setI => -[? _].
+by move => ?; split; [|left].
+Qed.
+
+Fact meetP (y x : arrow_choiceType T Prop_choiceType) :
+  x `|` x `&` y = x.
+Proof.
+apply/eqEsubset => ?.
+  case.
+    by [].
+  by move => [? ?].
+move => H; by left.
+Qed.
+
+Fact ldist : @left_distributive (set T) (set T) setI setU.
+Proof. apply: setIDl. Qed.
+
+Fact SetOrder_idempotent : @idempotent (set T) setI.
+Proof. apply: setIid. Qed.
+
+Definition orderMixin :=
+  @MeetJoinMixin _ asboolsubset proper_asboolsubset setI setU setI_meet proper_asboolsubset_proper SetOrder_setCI SetOrder_setCU SetOrder_setIA SetOrder_setUA joinP meetP ldist SetOrder_idempotent.
+
+
+Fact set_display : unit. Proof. by []. Qed.
+
+Canonical porderType := POrderType set_display (set T) orderMixin.
+Canonical latticeType := LatticeType (set T) orderMixin.
+Canonical distrLatticeType := DistrLatticeType (set T) orderMixin.
+
+Lemma subsetE X Y : (X `<=` Y) = (X <= Y)%O.
+Proof. by rewrite asboolE. Qed.
+
+End SetOrder.
+Module Exports.
+Canonical porderType.
+Canonical latticeType.
+Canonical distrLatticeType.
+Definition subsetE (T:Type):= @subsetE T.
+End Exports.
+End SetOrder.
